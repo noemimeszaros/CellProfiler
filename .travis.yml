@@ -2,36 +2,9 @@ matrix:
   allow_failures:
     - os: osx
   include:
-#    - addons:
-#        apt:
-#          packages:
-#            - libhdf5-serial-dev
-#            - python-mysqldb
-#            - python-pip
-#      apt: true
-#      directories: $HOME/.cache/pip
-#      dist: trusty
-#      env:
-#        - LC_ALL="en_US.UTF-8" CP_MYSQL_TEST_HOST="127.0.0.1" CP_MYSQL_TEST_USER="root" CP_MYSQL_TEST_PASSWORD=""
-#      group: deprecated-2017Q2
-#      install:
-#        - pip install --upgrade pip
-#        - pip install --upgrade cython
-#        - pip install --upgrade joblib
-#        - pip install --upgrade numpy
-#        - pip install --upgrade scipy
-#        - pip install --upgrade --editable .[test]
-#        - pip freeze
-#      language: python
-#      notifications:
-#        email: false
-#      os: linux
-#      python: 2.7.12
-#      script: pytest
-#      services: mysql
-#      sudo: required
     - before_install:
-        - brew update
+        - brew update && brew install awscli mysql upx python wxpython
+        - pip2 install --upgrade cython numpy scipy
       os: osx
       osx_image: xcode8.3
       python: 2.7.12
