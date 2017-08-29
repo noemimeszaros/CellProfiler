@@ -479,13 +479,20 @@ Two methods can be used to enhance neurites:
     def enhance_circles(self, image, radius):
         data = self.__mask(image.pixel_data, image.mask)
 
+        # http://scikit-image.org/docs/dev/auto_examples/edges/plot_circular_elliptical_hough_transform.html
         if image.volumetric:
             result = numpy.zeros_like(data)
 
             for index, plane in enumerate(data):
-                result[index] = skimage.transform.hough_circle(plane, radius)[0]
+                result[index] = skimage.transform.hough_circle(
+                    skimage.feature.canny(plane),
+                    radius
+                )[0]
         else:
-            result = skimage.transform.hough_circle(data, radius)[0]
+            result = skimage.transform.hough_circle(
+                skimage.feature.canny(plane),
+                radius
+            )[0]
 
         return self.__unmask(result, image.pixel_data, image.mask)
 
