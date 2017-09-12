@@ -74,10 +74,10 @@ What do the settings mean?
 See below for help on the individual settings. The following icons are
 used to call attention to key items:
 
-.. list-table:: 
+.. list-table::
   :widths: 10 100
   :header-rows: 0
-  
+
   * - .. image:: {PROTIP_RECOMEND_ICON}
     - Our recommendation or example use case for which a particular setting is best used.
   * - .. image:: {PROTIP_AVOID_ICON}
@@ -187,7 +187,7 @@ class IdentifySecondaryObjects(cellprofiler.module.ObjectProcessing):
     category = "Object Processing"
 
     def __init__(self):
-        self.apply_threshold = threshold.Threshold()
+        self.threshold = threshold.Threshold()
 
         super(IdentifySecondaryObjects, self).__init__()
 
@@ -399,12 +399,12 @@ segmentation.""")
 
         self.threshold_setting_version = cellprofiler.setting.Integer(
             "Threshold setting version",
-            value=self.apply_threshold.variable_revision_number
+            value=self.threshold.variable_revision_number
         )
 
-        self.apply_threshold.create_settings()
+        self.threshold.create_settings()
 
-        self.apply_threshold.threshold_smoothing_scale.value = 0
+        self.threshold.threshold_smoothing_scale.value = 0
 
     def settings(self):
         settings = super(IdentifySecondaryObjects, self).settings()
@@ -418,7 +418,7 @@ segmentation.""")
             self.wants_discard_primary,
             self.new_primary_objects_name,
             self.fill_holes
-        ] + [self.threshold_setting_version] + self.apply_threshold.settings()[2:]
+        ] + [self.threshold_setting_version] + self.threshold.settings()[2:]
 
     def visible_settings(self):
         visible_settings = [self.image_name]
@@ -428,7 +428,7 @@ segmentation.""")
         visible_settings += [self.method]
 
         if self.method != M_DISTANCE_N:
-            visible_settings += self.apply_threshold.visible_settings()[2:]
+            visible_settings += self.threshold.visible_settings()[2:]
 
         if self.method in (M_DISTANCE_B, M_DISTANCE_N):
             visible_settings += [self.distance_to_dilate]
@@ -456,7 +456,7 @@ segmentation.""")
             self.image_name
         ]
 
-        help_settings += self.apply_threshold.help_settings()[2:]
+        help_settings += self.threshold.help_settings()[2:]
 
         help_settings += [
             self.distance_to_dilate,
@@ -486,11 +486,11 @@ segmentation.""")
         threshold_settings_version = int(threshold_setting_values[0])
 
         if threshold_settings_version < 4:
-            threshold_setting_values = self.apply_threshold.upgrade_threshold_settings(threshold_setting_values)
+            threshold_setting_values = self.threshold.upgrade_threshold_settings(threshold_setting_values)
 
             threshold_settings_version = 9
 
-        threshold_upgrade_settings, threshold_settings_version, _ = self.apply_threshold.upgrade_settings(
+        threshold_upgrade_settings, threshold_settings_version, _ = self.threshold.upgrade_settings(
             ["None", "None"] + threshold_setting_values[1:],
             threshold_settings_version,
             "Threshold",
@@ -734,18 +734,18 @@ segmentation.""")
     def _threshold_image(self, image_name, workspace, automatic=False):
         image = workspace.image_set.get_image(image_name, must_be_grayscale=True)
 
-        local_threshold, global_threshold = self.apply_threshold.get_threshold(image, workspace, automatic)
+        local_threshold, global_threshold = self.threshold.get_threshold(image, workspace, automatic)
 
-        self.apply_threshold.add_threshold_measurements(
+        self.threshold.add_threshold_measurements(
             self.y_name.value,
             workspace.measurements,
             local_threshold,
             global_threshold
         )
 
-        binary_image, sigma = self.apply_threshold.apply_threshold(image, local_threshold, automatic)
+        binary_image, sigma = self.threshold.apply_threshold(image, local_threshold, automatic)
 
-        self.apply_threshold.add_fg_bg_measurements(
+        self.threshold.add_fg_bg_measurements(
             self.y_name.value,
             workspace.measurements,
             image,
@@ -879,7 +879,7 @@ segmentation.""")
             columns = super(IdentifySecondaryObjects, self).get_measurement_columns(pipeline)
 
         if self.method != M_DISTANCE_N:
-            columns += self.apply_threshold.get_measurement_columns(pipeline, object_name=self.y_name.value)
+            columns += self.threshold.get_measurement_columns(pipeline, object_name=self.y_name.value)
 
         return columns
 
@@ -887,7 +887,7 @@ segmentation.""")
         categories = super(IdentifySecondaryObjects, self).get_categories(pipeline, object_name)
 
         if self.method != M_DISTANCE_N:
-            categories += self.apply_threshold.get_categories(pipeline, object_name)
+            categories += self.threshold.get_categories(pipeline, object_name)
 
         if self.wants_discard_edge and self.wants_discard_primary:
             if object_name == self.new_primary_objects_name.value:
@@ -902,7 +902,7 @@ segmentation.""")
         measurements = super(IdentifySecondaryObjects, self).get_measurements(pipeline, object_name, category)
 
         if self.method.value != M_DISTANCE_N:
-            measurements += self.apply_threshold.get_measurements(pipeline, object_name, category)
+            measurements += self.threshold.get_measurements(pipeline, object_name, category)
 
         if self.wants_discard_edge and self.wants_discard_primary:
             if object_name == cellprofiler.measurement.IMAGE and category == cellprofiler.measurement.C_COUNT:
@@ -939,7 +939,9 @@ segmentation.""")
         return measurements
 
     def get_measurement_objects(self, pipeline, object_name, category, measurement):
-        if self.method != M_DISTANCE_N:
+        threshold_measurements = self.threshold.get_measurements(pipeline, object_name, category)
+
+        if self.method != M_DISTANCE_N and measurement in threshold_measurements:
             return [self.y_name.value]
 
         return []
