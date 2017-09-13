@@ -53,7 +53,7 @@ and *conditions* you can specify to narrow down the image list.
    -  If you select “Does” and “Start with” as the operators and
       “BBBC013-1” in the Condition box, the rule will includes such files
       as “BBBC013-1.tif” “BBBC013-1-A01.png”, and so on.
-      
+
 .. image:: {IMAGES_USING_RULES_ICON}
    :width: 100%
 
@@ -144,7 +144,7 @@ metadata tags for which all images in each individual image set have the same va
 
 -  Example: if you had extracted "*Plate*", "*Well*", and "*Channel*" metadata
    from your images, for most pipelines folders based on "*Plate*" or "*Well*" would work since
-   each individual image set would come only from a single well on a single plate, but 
+   each individual image set would come only from a single well on a single plate, but
    folders based on "*Channel*" would not work as each individual image set might
    contain many channels.
 """.format(**{
@@ -170,7 +170,7 @@ def __image_resource(filename):
         ))
     else:
     #If you're rendering in sphinx, the relative path of the rst file is one below the make file so compensate accordingly
-        return os.path.join('..',os.path.relpath(pkg_resources.resource_filename(
+        return os.path.join('..', '..', os.path.relpath(pkg_resources.resource_filename(
             "cellprofiler",
             os.path.join("data", "images", filename)
         )))
