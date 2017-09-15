@@ -1,144 +1,121 @@
-# coding=utf-8
-
-"""
-MeasureObjectSizeShape
-======================
-
-**MeasureObjectSizeShape** measures several area and shape features
-of identified objects.
-
+import cellprofiler.icons 
+from cellprofiler.gui.help import MEASUREOBJSIZESHAPE_ECCENTRICITY
+__doc__ = '''
+<b>Measure Object Size Shape </b> measures several area and shape
+features of identified objects.
+<hr>
 Given an image with identified objects (e.g. nuclei or cells), this
 module extracts area and shape features of each one. Note that these
 features are only reliable for objects that are completely inside the
 image borders, so you may wish to exclude objects touching the edge of
-the image using **IdentifyPrimaryObjects**.
+the image using <b>IdentifyPrimaryObjects</b>.
 
-Please note that the display window for this module shows per-image
-aggregates for the per-object measurements. If you want to view the
-per-object measurements themselves, you will need to use
-**ExportToSpreadsheet** to export them, or use **DisplayDataOnImage** to
-display the object measurements of choice overlaid on an image of
-choice.
+<p>Please note that the display window for this module shows per-image aggregates for the per-object
+measurements. If you want to view the per-object measurements themselves, you will need to use
+<b>ExportToSpreadsheet</b> to export them, or use <b>DisplayDataOnImage</b> to display the
+object measurements of choice overlaid on an image of choice.</p>
 
-Measurements made by this module
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<h4>Available measurements</h4>
+See the <i>Technical Notes</i> below for an explanation of creating an ellipse with the
+same second-moments as an object region.
 
-See the *Technical Notes* below for an explanation of creating an
-ellipse with the same second-moments as an object region.
+<ul>
+<li><i>Area:</i> The actual number of pixels in the region.</li>
+<li><i>Perimeter:</i> The total number of pixels around the boundary of each
+region in the image.</li>
+<li><i>FormFactor:</i> Calculated as 4*&pi;*Area/Perimeter<sup>2</sup>. Equals 1 for a
+perfectly circular object.</li>
+<li><i>Solidity:</i> The proportion of the pixels in the convex hull that
+are also in the object, i.e. <i>ObjectArea/ConvexHullArea</i>. Equals 1 for a solid object
+(i.e., one with no holes or has a concave boundary), or &lt;1 for an object
+with holes or possessing a convex/irregular boundary.</li>
+<li><i>Extent:</i> The proportion of the pixels in the bounding box that
+are also in the region. Computed as the Area divided by the area of the
+bounding box.</li>
+<li><i>EulerNumber:</i> The number of objects in the region
+minus the number of holes in those objects, assuming 8-connectivity.</li>
+<li><i>Center_X, Center_Y:</i> The <i>x</i>- and <i>y</i>-coordinates of the
+point farthest away from any object edge. Note that this is not the same as the
+<i>Location-X</i> and <i>-Y</i> measurements produced by the <b>Identify</b>
+modules.
+</li>
+<li><i>Eccentricity:</i> The eccentricity of the ellipse that has the
+same second-moments as the region. The eccentricity is the ratio of the
+distance between the foci of the ellipse and its major axis length. The
+value is between 0 and 1. (0 and 1 are degenerate cases; an ellipse whose
+eccentricity is 0 is actually a circle, while an ellipse whose eccentricity
+is 1 is a line segment.)
+<table cellpadding="0" width="100%%">
+<tr align="center"><td><img src="memory:%(MEASUREOBJSIZESHAPE_ECCENTRICITY)s"></td></tr>
+</table></li>
+<li><i>MajorAxisLength:</i> The length (in pixels) of the major axis of
+the ellipse that has the same normalized second central moments as the
+region.</li>
+<li><i>MinorAxisLength:</i> The length (in pixels) of the minor axis of
+the ellipse that has the same normalized second central moments as the
+region.</li>
+<li><i>Orientation:</i> The angle (in degrees ranging from -90 to 90
+degrees) between the x-axis and the major axis of the ellipse that has the
+same second-moments as the region.</li>
+<li><i>Compactness:</i> The mean squared distance of the object's
+pixels from the centroid divided by the area. A filled circle will have
+a compactness of 1, with irregular objects or objects with holes having
+a value greater than 1.</li>
+<li><i>MaximumRadius:</i> The maximum distance of any pixel in the object
+to the closest pixel outside of the object. For skinny objects, this
+is 1/2 of the maximum width of the object.</li>
+<li><i>MedianRadius:</i> The median distance of any pixel in the object
+to the closest pixel outside of the object.</li>
+<li><i>MeanRadius:</i> The mean distance of any pixel in the object
+to the closest pixel outside of the object.</li>
+<li><i>MinFeretDiameter, MaxFeretDiameter:</i> The Feret diameter is the
+distance between two parallel lines tangent on either side of the object
+(imagine taking a caliper and measuring the object at various angles).
+The minimum and maximum Feret diameters are the smallest and largest possible
+diameters, rotating the calipers along all possible angles.</li>
+<li><i>Zernike shape features:</i> Measure shape by describing a binary object (or
+more precisely, a patch with background and an object in the center) in a
+basis of Zernike polynomials, using the coefficients as features (<i>Boland
+et al., 1998</i>). Currently, Zernike polynomials from order 0 to order 9 are
+calculated, giving in total 30 measurements. While there is no limit to
+the order which can be calculated (and indeed users could add more by
+adjusting the code), the higher order polynomials carry less information.</li>
+</ul>
 
--  *Area:* The number of pixels in the region.
--  *Perimeter:* The total number of pixels around the boundary of each
-   region in the image.
--  *FormFactor:* Calculated as 4\*π\*Area/Perimeter\ :sup:`2`. Equals 1
-   for a perfectly circular object.
--  *Solidity:* The proportion of the pixels in the convex hull that are
-   also in the object, i.e. *ObjectArea/ConvexHullArea*. Equals 1 for a
-   solid object (i.e., one with no holes or has a concave boundary), or
-   <1 for an object with holes or possessing a convex/irregular
-   boundary.
--  *Extent:* The proportion of the pixels in the bounding box that are
-   also in the region. Computed as the Area divided by the area of the
-   bounding box.
--  *EulerNumber:* The number of objects in the region minus the number
-   of holes in those objects, assuming 8-connectivity.
--  *Center\_X, Center\_Y:* The *x*- and *y*-coordinates of the point
-   farthest away from any object edge. Note that this is not the same as
-   the *Location-X* and *-Y* measurements produced by the **Identify**
-   modules.
--  *Eccentricity:* The eccentricity of the ellipse that has the same
-   second-moments as the region. The eccentricity is the ratio of the
-   distance between the foci of the ellipse and its major axis length.
-   The value is between 0 and 1. (0 and 1 are degenerate cases; an
-   ellipse whose eccentricity is 0 is actually a circle, while an
-   ellipse whose eccentricity is 1 is a line segment.)
-   +------------+
-   | |image0|   |
-   +------------+
+<h4>Technical notes</h4>
+A number of the object measurements are generated by creating an ellipse with the
+same second-moments as the original object region. This is essentially the
+best-fitting ellipse for a given object with the same statistical properties.
+Furthermore, they are not affected by the translation or uniform scaling of a region.
 
--  *MajorAxisLength:* The length (in pixels) of the major axis of the
-   ellipse that has the same normalized second central moments as the
-   region.
--  *MinorAxisLength:* The length (in pixels) of the minor axis of the
-   ellipse that has the same normalized second central moments as the
-   region.
--  *Orientation:* The angle (in degrees ranging from -90 to 90 degrees)
-   between the x-axis and the major axis of the ellipse that has the
-   same second-moments as the region.
--  *Compactness:* The mean squared distance of the object’s pixels from
-   the centroid divided by the area. A filled circle will have a
-   compactness of 1, with irregular objects or objects with holes having
-   a value greater than 1.
--  *MaximumRadius:* The maximum distance of any pixel in the object to
-   the closest pixel outside of the object. For skinny objects, this is
-   1/2 of the maximum width of the object.
--  *MedianRadius:* The median distance of any pixel in the object to the
-   closest pixel outside of the object.
--  *MeanRadius:* The mean distance of any pixel in the object to the
-   closest pixel outside of the object.
--  *MinFeretDiameter, MaxFeretDiameter:* The Feret diameter is the
-   distance between two parallel lines tangent on either side of the
-   object (imagine taking a caliper and measuring the object at various
-   angles). The minimum and maximum Feret diameters are the smallest and
-   largest possible diameters, rotating the calipers along all possible
-   angles.
--  *Zernike shape features:* Measure shape by describing a binary object
-   (or more precisely, a patch with background and an object in the
-   center) in a basis of Zernike polynomials, using the coefficients as
-   features (*Boland et al., 1998*). Currently, Zernike polynomials from
-   order 0 to order 9 are calculated, giving in total 30 measurements.
-   While there is no limit to the order which can be calculated (and
-   indeed users could add more by adjusting the code), the higher order
-   polynomials carry less information.
+<p>The Zernike features are computed within the minimum enclosing circle
+of the object, i.e., the circle of the smallest diameter that contains all of the
+object's pixels.</p>
 
-Technical notes
-^^^^^^^^^^^^^^^
+<h4>References</h4>
+<ul>
+<li>Rocha L, Velho L, Carvalho PCP, "Image moments-based structuring and tracking of objects",
+Proceedings from XV Brazilian Symposium on Computer Graphics and Image Processing, 2002.
+<a href="http://sibgrapi.sid.inpe.br/col/sid.inpe.br/banon/2002/10.23.11.34/doc/35.pdf">(pdf)</a>
+</li>
+<li>Principles of Digital Image Processing: Core Algorithms (Undergraduate Topics in Computer Science):
+<a href="http://www.scribd.com/doc/58004056/Principles-of-Digital-Image-Processing#page=49">Section 2.4.3 - Statistical shape properties</a>
+</li>
+<li>Chrystal P (1885), "On the problem to construct the minimum circle enclosing n
+given points in a plane", <i>Proceedings of the Edinburgh Mathematical Society</i>,
+vol 3, p. 30 </li>
+</ul>
 
-A number of the object measurements are generated by creating an ellipse
-with the same second-moments as the original object region. This is
-essentially the best-fitting ellipse for a given object with the same
-statistical properties. Furthermore, they are not affected by the
-translation or uniform scaling of a region.
-
-Following computer vision conventions, the origin of the X and Y axes is at the top
-left of the image rather than the bottom left; the orientation of objects whose topmost point
-is on their right (or are rotated counter-clockwise from the horizontal) will therefore
-have a negative orientation, while objects whose topmost point is on their left
-(or are rotated clockwise from the horizontal) will have a positive orientation.
-
-The Zernike features are computed within the minimum enclosing circle of
-the object, i.e., the circle of the smallest diameter that contains all
-of the object’s pixels.
-
-References
-^^^^^^^^^^
-
--  Rocha L, Velho L, Carvalho PCP, “Image moments-based structuring and
-   tracking of objects”, Proceedings from XV Brazilian Symposium on
-   Computer Graphics and Image Processing, 2002. `(pdf)`_
--  Principles of Digital Image Processing: Core Algorithms
-   (Undergraduate Topics in Computer Science): `Section 2.4.3 -
-   Statistical shape properties`_
--  Chrystal P (1885), “On the problem to construct the minimum circle
-   enclosing n given points in a plane”, *Proceedings of the Edinburgh
-   Mathematical Society*, vol 3, p. 30
-
-See also **MeasureImageAreaOccupied**.
-
-.. _(pdf): http://sibgrapi.sid.inpe.br/col/sid.inpe.br/banon/2002/10.23.11.34/doc/35.pdf
-.. _Section 2.4.3 - Statistical shape properties: http://www.scribd.com/doc/58004056/Principles-of-Digital-Image-Processing#page=49
-.. |image0| image:: memory:MeasureObjectSizeShape_Eccentricity.png
-"""
-
-import cellprofiler.icons
-from cellprofiler.gui.help import MEASUREOBJSIZESHAPE_ECCENTRICITY
+See also <b>MeasureImageAreaOccupied</b>.
+'''%globals()
 
 import numpy as np
 import scipy.ndimage as scind
 
-import cellprofiler.module as cpm
-import cellprofiler.object as cpo
-import cellprofiler.setting as cps
-from cellprofiler.setting import YES, NO
+import cellprofiler.cpmodule as cpm
+import cellprofiler.objects as cpo
+import cellprofiler.settings as cps
+from cellprofiler.settings import YES, NO
 import centrosome.zernike as cpmz
 from centrosome.cpmorphology import fixup_scipy_ndimage_result as fix
 from centrosome.cpmorphology import ellipse_from_second_moments_ijv
@@ -151,8 +128,7 @@ from centrosome.cpmorphology import maximum_position_of_labels
 from centrosome.cpmorphology import median_of_labels
 from centrosome.cpmorphology import feret_diameter
 from centrosome.cpmorphology import convex_hull_ijv
-from cellprofiler.measurement import COLTYPE_FLOAT
-import skimage.measure
+from cellprofiler.measurements import COLTYPE_FLOAT
 
 """The category of the per-object measurements made by this module"""
 AREA_SHAPE = 'AreaShape'
@@ -166,7 +142,6 @@ F_SOLIDITY = 'Solidity'
 F_EXTENT = 'Extent'
 F_CENTER_X = 'Center_X'
 F_CENTER_Y = 'Center_Y'
-F_CENTER_Z = 'Center_Z'
 F_EULER_NUMBER = 'EulerNumber'
 F_PERIMETER = 'Perimeter'
 F_FORM_FACTOR = 'FormFactor'
@@ -181,15 +156,15 @@ F_MIN_FERET_DIAMETER = 'MinFeretDiameter'
 F_MAX_FERET_DIAMETER = 'MaxFeretDiameter'
 
 """The non-Zernike features"""
-F_STANDARD = [F_AREA, F_ECCENTRICITY, F_SOLIDITY, F_EXTENT,
-              F_EULER_NUMBER, F_PERIMETER, F_FORM_FACTOR,
-              F_MAJOR_AXIS_LENGTH, F_MINOR_AXIS_LENGTH,
-              F_ORIENTATION, F_COMPACTNESS, F_CENTER_X, F_CENTER_Y, F_CENTER_Z,
-              F_MAXIMUM_RADIUS, F_MEAN_RADIUS, F_MEDIAN_RADIUS,
-              F_MIN_FERET_DIAMETER, F_MAX_FERET_DIAMETER]
+F_STANDARD = [ F_AREA, F_ECCENTRICITY, F_SOLIDITY, F_EXTENT,
+               F_EULER_NUMBER, F_PERIMETER, F_FORM_FACTOR,
+               F_MAJOR_AXIS_LENGTH, F_MINOR_AXIS_LENGTH,
+               F_ORIENTATION, F_COMPACTNESS, F_CENTER_X, F_CENTER_Y,
+               F_MAXIMUM_RADIUS, F_MEAN_RADIUS, F_MEDIAN_RADIUS,
+               F_MIN_FERET_DIAMETER, F_MAX_FERET_DIAMETER]
 
+class MeasureObjectSizeShape(cpm.CPModule):
 
-class MeasureObjectSizeShape(cpm.Module):
     module_name = "MeasureObjectSizeShape"
     variable_revision_number = 1
     category = 'Measurement'
@@ -201,25 +176,25 @@ class MeasureObjectSizeShape(cpm.Module):
         of which has an entry in self.object_groups.
         """
         self.object_groups = []
-        self.add_object(can_remove=False)
-        self.spacer = cps.Divider(line=True)
-        self.add_objects = cps.DoSomething("", "Add another object", self.add_object)
+        self.add_object(can_remove = False)
+        self.spacer = cps.Divider(line = True)
+        self.add_objects = cps.DoSomething("", "Add another object",self.add_object)
 
         self.calculate_zernikes = cps.Binary(
-                'Calculate the Zernike features?', True, doc="""
-                Select *%(YES)s* to calculate the Zernike shape features. Since the
-                first 10 Zernike polynomials (from order 0 to order 9) are calculated,
-                this operation can be time consuming if the image contains a lot of
-                objects.""" % globals())
+            'Calculate the Zernike features?',True, doc="""
+            Select <i>%(YES)s</i> to calculate the Zernike shape features. Since the
+            first 10 Zernike polynomials (from order 0 to order 9) are
+            calculated, this operation can be time consuming if the image
+            contains a lot of objects."""%globals())
 
-    def add_object(self, can_remove=True):
+    def add_object(self, can_remove = True):
         """Add a slot for another object"""
         group = cps.SettingsGroup()
         if can_remove:
             group.append("divider", cps.Divider(line=False))
 
         group.append("name", cps.ObjectNameSubscriber(
-                "Select objects to measure", cps.NONE, doc="""
+            "Select objects to measure",cps.NONE,doc="""
             Select the objects that you want to measure."""))
 
         if can_remove:
@@ -235,7 +210,7 @@ class MeasureObjectSizeShape(cpm.Module):
 
     def prepare_settings(self, setting_values):
         """Adjust the number of object groups based on the number of setting_values"""
-        object_group_count = len(setting_values) - 1
+        object_group_count = len(setting_values)-1
         while len(self.object_groups) > object_group_count:
             self.remove_object(object_group_count)
 
@@ -256,11 +231,11 @@ class MeasureObjectSizeShape(cpm.Module):
         for group in self.object_groups:
             if group.name.value in objects:
                 raise cps.ValidationError(
-                        "%s has already been selected" % group.name.value,
-                        group.name)
+                    "%s has already been selected" %group.name.value,
+                    group.name)
             objects.add(group.name.value)
 
-    def get_categories(self, pipeline, object_name):
+    def get_categories(self,pipeline, object_name):
         """Get the categories of measurements supplied for the given object name
 
         pipeline - pipeline being run
@@ -275,7 +250,7 @@ class MeasureObjectSizeShape(cpm.Module):
     def get_zernike_numbers(self):
         """The Zernike numbers measured by this module"""
         if self.calculate_zernikes.value:
-            return cpmz.get_zernike_indexes(ZERNIKE_N + 1)
+            return cpmz.get_zernike_indexes(ZERNIKE_N+1)
         else:
             return []
 
@@ -284,7 +259,7 @@ class MeasureObjectSizeShape(cpm.Module):
 
         zernike_index - a 2 element sequence organized as N,M
         """
-        return "Zernike_%d_%d" % (zernike_index[0], zernike_index[1])
+        return "Zernike_%d_%d"%(zernike_index[0],zernike_index[1])
 
     def get_feature_names(self):
         """Return the names of the features measured"""
@@ -301,7 +276,7 @@ class MeasureObjectSizeShape(cpm.Module):
         category - return measurements made in this category
         """
         if (category == AREA_SHAPE and
-                self.get_categories(pipeline, object_name)):
+            self.get_categories(pipeline,object_name)):
             return self.get_feature_names()
         return []
 
@@ -309,185 +284,126 @@ class MeasureObjectSizeShape(cpm.Module):
         """Run, computing the area measurements for the objects"""
 
         if self.show_window:
-            workspace.display_data.col_labels = ("Object", "Feature", "Mean", "Median", "STD")
-
+            workspace.display_data.col_labels = \
+                     ("Object", "Feature", "Mean", "Median", "STD")
             workspace.display_data.statistics = []
-
         for object_group in self.object_groups:
             self.run_on_objects(object_group.name.value, workspace)
 
     def run_on_objects(self, object_name, workspace):
         """Run, computing the area measurements for a single map of objects"""
         objects = workspace.get_objects(object_name)
-
-        if len(objects.shape) == 2:
-            #
-            # Do the ellipse-related measurements
-            #
-            i, j, l = objects.ijv.transpose()
-            centers, eccentricity, major_axis_length, minor_axis_length, \
-            theta, compactness = \
-                ellipse_from_second_moments_ijv(i, j, 1, l, objects.indices, True)
-            del i
-            del j
-            del l
-            self.record_measurement(workspace, object_name,
-                                    F_ECCENTRICITY, eccentricity)
-            self.record_measurement(workspace, object_name,
-                                    F_MAJOR_AXIS_LENGTH, major_axis_length)
-            self.record_measurement(workspace, object_name,
-                                    F_MINOR_AXIS_LENGTH, minor_axis_length)
-            self.record_measurement(workspace, object_name, F_ORIENTATION,
-                                    theta * 180 / np.pi)
-            self.record_measurement(workspace, object_name, F_COMPACTNESS,
-                                    compactness)
-            is_first = False
-            if len(objects.indices) == 0:
-                nobjects = 0
-            else:
-                nobjects = np.max(objects.indices)
-            mcenter_x = np.zeros(nobjects)
-            mcenter_y = np.zeros(nobjects)
-            mextent = np.zeros(nobjects)
-            mperimeters = np.zeros(nobjects)
-            msolidity = np.zeros(nobjects)
-            euler = np.zeros(nobjects)
-            max_radius = np.zeros(nobjects)
-            median_radius = np.zeros(nobjects)
-            mean_radius = np.zeros(nobjects)
-            min_feret_diameter = np.zeros(nobjects)
-            max_feret_diameter = np.zeros(nobjects)
-            zernike_numbers = self.get_zernike_numbers()
-            zf = {}
-            for n, m in zernike_numbers:
-                zf[(n, m)] = np.zeros(nobjects)
-            if nobjects > 0:
-                chulls, chull_counts = convex_hull_ijv(objects.ijv, objects.indices)
-                for labels, indices in objects.get_labels():
-                    to_indices = indices - 1
-                    distances = distance_to_edge(labels)
-                    mcenter_y[to_indices], mcenter_x[to_indices] = \
-                        maximum_position_of_labels(distances, labels, indices)
-                    max_radius[to_indices] = fix(scind.maximum(
-                            distances, labels, indices))
-                    mean_radius[to_indices] = fix(scind.mean(
-                            distances, labels, indices))
-                    median_radius[to_indices] = median_of_labels(
-                            distances, labels, indices)
-                    #
-                    # The extent (area / bounding box area)
-                    #
-                    mextent[to_indices] = calculate_extents(labels, indices)
-                    #
-                    # The perimeter distance
-                    #
-                    mperimeters[to_indices] = calculate_perimeters(labels, indices)
-                    #
-                    # Solidity
-                    #
-                    msolidity[to_indices] = calculate_solidity(labels, indices)
-                    #
-                    # Euler number
-                    #
-                    euler[to_indices] = euler_number(labels, indices)
-                    #
-                    # Zernike features
-                    #
-                    if self.calculate_zernikes.value:
-                        zf_l = cpmz.zernike(zernike_numbers, labels, indices)
-                        for (n, m), z in zip(zernike_numbers, zf_l.transpose()):
-                            zf[(n, m)][to_indices] = z
-                #
-                # Form factor
-                #
-                ff = 4.0 * np.pi * objects.areas / mperimeters ** 2
-                #
-                # Feret diameter
-                #
-                min_feret_diameter, max_feret_diameter = \
-                    feret_diameter(chulls, chull_counts, objects.indices)
-
-            else:
-                ff = np.zeros(0)
-
-            for f, m in ([(F_AREA, objects.areas),
-                          (F_CENTER_X, mcenter_x),
-                          (F_CENTER_Y, mcenter_y),
-                          (F_CENTER_Z, np.ones_like(mcenter_x)),
-                          (F_EXTENT, mextent),
-                          (F_PERIMETER, mperimeters),
-                          (F_SOLIDITY, msolidity),
-                          (F_FORM_FACTOR, ff),
-                          (F_EULER_NUMBER, euler),
-                          (F_MAXIMUM_RADIUS, max_radius),
-                          (F_MEAN_RADIUS, mean_radius),
-                          (F_MEDIAN_RADIUS, median_radius),
-                          (F_MIN_FERET_DIAMETER, min_feret_diameter),
-                          (F_MAX_FERET_DIAMETER, max_feret_diameter)] +
-                             [(self.get_zernike_name((n, m)), zf[(n, m)])
-                              for n, m in zernike_numbers]):
-                self.record_measurement(workspace, object_name, f, m)
+        assert isinstance(objects, cpo.Objects)
+        #
+        # Do the ellipse-related measurements
+        #
+        i, j, l = objects.ijv.transpose()
+        centers, eccentricity, major_axis_length, minor_axis_length, \
+            theta, compactness =\
+            ellipse_from_second_moments_ijv(i, j, 1, l, objects.indices, True)
+        del i
+        del j
+        del l
+        self.record_measurement(workspace, object_name,
+                                F_ECCENTRICITY, eccentricity)
+        self.record_measurement(workspace, object_name,
+                                F_MAJOR_AXIS_LENGTH, major_axis_length)
+        self.record_measurement(workspace, object_name,
+                                F_MINOR_AXIS_LENGTH, minor_axis_length)
+        self.record_measurement(workspace, object_name, F_ORIENTATION,
+                                theta * 180 / np.pi)
+        self.record_measurement(workspace, object_name, F_COMPACTNESS,
+                                compactness)
+        is_first = False
+        if len(objects.indices) == 0:
+            nobjects = 0
         else:
-            labels = objects.segmented
+            nobjects = np.max(objects.indices)
+        mcenter_x = np.zeros(nobjects)
+        mcenter_y = np.zeros(nobjects)
+        mextent = np.zeros(nobjects)
+        mperimeters = np.zeros(nobjects)
+        msolidity = np.zeros(nobjects)
+        euler = np.zeros(nobjects)
+        max_radius = np.zeros(nobjects)
+        median_radius = np.zeros(nobjects)
+        mean_radius = np.zeros(nobjects)
+        min_feret_diameter = np.zeros(nobjects)
+        max_feret_diameter = np.zeros(nobjects)
+        zernike_numbers = self.get_zernike_numbers()
+        zf = {}
+        for n,m in zernike_numbers:
+            zf[(n,m)] = np.zeros(nobjects)
+        if nobjects > 0:
+            chulls, chull_counts = convex_hull_ijv(objects.ijv, objects.indices)
+            for labels, indices in objects.get_labels():
+                to_indices = indices-1
+                distances = distance_to_edge(labels)
+                mcenter_y[to_indices], mcenter_x[to_indices] =\
+                         maximum_position_of_labels(distances, labels, indices)
+                max_radius[to_indices] = fix(scind.maximum(
+                    distances, labels, indices))
+                mean_radius[to_indices] = fix(scind.mean(
+                    distances, labels, indices))
+                median_radius[to_indices] = median_of_labels(
+                    distances, labels, indices)
+                #
+                # The extent (area / bounding box area)
+                #
+                mextent[to_indices] = calculate_extents(labels, indices)
+                #
+                # The perimeter distance
+                #
+                mperimeters[to_indices] = calculate_perimeters(labels, indices)
+                #
+                # Solidity
+                #
+                msolidity[to_indices] = calculate_solidity(labels, indices)
+                #
+                # Euler number
+                #
+                euler[to_indices] = euler_number(labels, indices)
+                #
+                # Zernike features
+                #
+                zf_l = cpmz.zernike(zernike_numbers, labels, indices)
+                for (n,m), z in zip(zernike_numbers, zf_l.transpose()):
+                    zf[(n,m)][to_indices] = z
+            #
+            # Form factor
+            #
+            ff = 4.0 * np.pi * objects.areas / mperimeters**2
+            #
+            # Feret diameter
+            #
+            min_feret_diameter, max_feret_diameter = \
+                feret_diameter(chulls, chull_counts, objects.indices)
 
-            props = skimage.measure.regionprops(labels)
+        else:
+            ff = np.zeros(0)
 
-            # Area
-            areas = [prop.area for prop in props]
-
-            self.record_measurement(workspace, object_name, F_AREA, areas)
-
-            # Extent
-            extents = [prop.extent for prop in props]
-
-            self.record_measurement(workspace, object_name, F_EXTENT, extents)
-
-            # Centers of mass
-            centers = objects.center_of_mass()
-
-            center_z, center_x, center_y = centers.transpose()
-
-            self.record_measurement(workspace, object_name, F_CENTER_X, center_x)
-
-            self.record_measurement(workspace, object_name, F_CENTER_Y, center_y)
-
-            self.record_measurement(workspace, object_name, F_CENTER_Z, center_z)
-
-            # Perimeters
-            perimeters = []
-
-            for label in np.unique(labels):
-                if label == 0:
-                    continue
-
-                volume = np.zeros_like(labels, dtype='bool')
-
-                volume[labels == label] = True
-
-                verts, faces, _, _ = skimage.measure.marching_cubes(
-                    volume,
-                    spacing=objects.parent_image.spacing if objects.has_parent_image else (1.0,) * labels.ndim,
-                    level=0
-                )
-
-                perimeters += [skimage.measure.mesh_surface_area(verts, faces)]
-
-            if len(perimeters) == 0:
-                self.record_measurement(workspace, object_name, F_PERIMETER, [0])
-            else:
-                self.record_measurement(workspace, object_name, F_PERIMETER, perimeters)
-
-            for feature in self.get_feature_names():
-                if feature in [F_AREA, F_EXTENT, F_CENTER_X, F_CENTER_Y, F_CENTER_Z, F_PERIMETER]:
-                    continue
-
-                self.record_measurement(workspace, object_name, feature, [np.nan])
+        for f, m in ([(F_AREA, objects.areas),
+                      (F_CENTER_X, mcenter_x),
+                      (F_CENTER_Y, mcenter_y),
+                      (F_EXTENT, mextent),
+                      (F_PERIMETER, mperimeters),
+                      (F_SOLIDITY, msolidity),
+                      (F_FORM_FACTOR, ff),
+                      (F_EULER_NUMBER, euler),
+                      (F_MAXIMUM_RADIUS, max_radius),
+                      (F_MEAN_RADIUS, mean_radius),
+                      (F_MEDIAN_RADIUS, median_radius),
+                      (F_MIN_FERET_DIAMETER, min_feret_diameter),
+                      (F_MAX_FERET_DIAMETER, max_feret_diameter)] +
+                     [(self.get_zernike_name((n,m)), zf[(n,m)])
+                       for n,m in zernike_numbers]):
+            self.record_measurement(workspace, object_name, f, m)
 
     def display(self, workspace, figure):
         figure.set_subplots((1, 1))
         figure.subplot_table(0, 0,
                              workspace.display_data.statistics,
-                             col_labels=workspace.display_data.col_labels)
+                             col_labels = workspace.display_data.col_labels)
 
     def perform_measurement(self, workspace, function,
                             object_name, feature_name):
@@ -511,7 +427,7 @@ class MeasureObjectSizeShape(cpm.Module):
         self.record_measurement(workspace, object_name, feature_name, data)
 
     def perform_ndmeasurement(self, workspace, function,
-                              object_name, feature_name):
+                              object_name, feature_name ):
         """Perform a scipy.ndimage-style measurement on a label matrix
 
         workspace   - the workspace for the run
@@ -531,20 +447,20 @@ class MeasureObjectSizeShape(cpm.Module):
             data = np.zeros((0,))
         self.record_measurement(workspace, object_name, feature_name, data)
 
-    def record_measurement(self, workspace,
+    def record_measurement(self,workspace,
                            object_name, feature_name, result):
         """Record the result of a measurement in the workspace's measurements"""
         data = fix(result)
         workspace.add_measurement(object_name,
-                                  "%s_%s" % (AREA_SHAPE, feature_name),
+                                  "%s_%s"%(AREA_SHAPE,feature_name),
                                   data)
         if self.show_window and np.any(np.isfinite(data)) > 0:
             data = data[np.isfinite(data)]
             workspace.display_data.statistics.append(
-                    (object_name, feature_name,
-                     "%.2f" % np.mean(data),
-                     "%.2f" % np.median(data),
-                     "%.2f" % np.std(data)))
+                (object_name, feature_name,
+                 "%.2f"%np.mean(data),
+                 "%.2f"%np.median(data),
+                 "%.2f"%np.std(data)))
 
     def get_measurement_columns(self, pipeline):
         '''Return measurement column definitions.
@@ -554,8 +470,11 @@ class MeasureObjectSizeShape(cpm.Module):
         cols = []
         for oname in object_names:
             for mname in measurement_names:
-                cols += [(oname, AREA_SHAPE + '_' + mname, COLTYPE_FLOAT)]
+                cols += [(oname, AREA_SHAPE+'_'+mname, COLTYPE_FLOAT)]
         return cols
+
+
+
 
     def upgrade_settings(self, setting_values, variable_revision_number,
                          module_name, from_matlab):
@@ -585,17 +504,12 @@ class MeasureObjectSizeShape(cpm.Module):
             from_matlab = False
         return setting_values, variable_revision_number, from_matlab
 
-    def volumetric(self):
-        return True
-
-
 def form_factor(objects):
     """FormFactor = 4/pi*Area/Perimeter^2, equals 1 for a perfectly circular"""
     if len(objects.indices) > 0:
         perimeter = objects.fn_of_label_and_index(calculate_perimeters)
-        return 4.0 * np.pi * objects.areas / perimeter ** 2
+        return 4.0*np.pi*objects.areas / perimeter**2
     else:
         return np.zeros((0,))
-
 
 MeasureObjectAreaShape = MeasureObjectSizeShape
